@@ -10,16 +10,19 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      "https://api.siliconflow.cn/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.SILICONFLOW_API_KEY}`,
+        },
         body: JSON.stringify({
-          contents: [
+          model: "Qwen/Qwen2.5-7B-Instruct",
+          messages: [
             {
-              parts: [
-                {
-                  text: `你是一个产品创意专家。根据关键词「${keywords}」，生成 5 个产品创意。
+              role: "user",
+              content: `你是一个产品创意专家。根据关键词「${keywords}」，生成 5 个产品创意。
 只返回合法 JSON，不要有任何多余的文字或代码块标记。
 格式如下：
 [
@@ -31,8 +34,6 @@ export default async function handler(req, res) {
   }
 ]
 difficulty 只能是 easy、medium、hard 三个值之一。`,
-                },
-              ],
             },
           ],
         }),
@@ -40,9 +41,9 @@ difficulty 只能是 easy、medium、hard 三个值之一。`,
     );
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data.choices?.[0]?.message?.content;
 
-    if (!text) throw new Error("Gemini 没有返回内容");
+    if (!text) throw new Error("没有返回内容");
 
     const clean = text.replace(/```json|```/g, "").trim();
     const ideas = JSON.parse(clean);
