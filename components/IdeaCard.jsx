@@ -1,5 +1,3 @@
-import { supabase } from "../lib/supabase";
-
 const difficultyColor = {
   easy: { bg: "#e6f4ea", text: "#2d6a4f" },
   medium: { bg: "#fff8e1", text: "#b45309" },
@@ -7,24 +5,11 @@ const difficultyColor = {
 };
 const difficultyLabel = { easy: "简单", medium: "中等", hard: "困难" };
 
-export default function IdeaCard({ idea, user, favorites, onFavChange }) {
+export default function IdeaCard({ idea, favorites, onFavChange }) {
   const isFavorited = favorites.some((f) => f.title === idea.title);
 
-  async function toggleFavorite() {
-    if (!user) { alert("请先登录才能收藏"); return; }
-    if (isFavorited) {
-      const target = favorites.find((f) => f.title === idea.title);
-      await supabase.from("favorites").delete().eq("id", target.id);
-    } else {
-      await supabase.from("favorites").insert({
-        user_id: user.id,
-        title: idea.title,
-        description: idea.description,
-        difficulty: idea.difficulty,
-        monetization: idea.monetization,
-      });
-    }
-    onFavChange();
+  function toggleFavorite() {
+    onFavChange(idea);
   }
 
   return (
@@ -40,11 +25,9 @@ export default function IdeaCard({ idea, user, favorites, onFavChange }) {
             {difficultyLabel[idea.difficulty] ?? idea.difficulty}
           </span>
         </div>
-        {user && (
-          <button onClick={toggleFavorite} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22 }}>
-            {isFavorited ? "❤️" : "🤍"}
-          </button>
-        )}
+        <button onClick={toggleFavorite} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22 }}>
+          {isFavorited ? "❤️" : "🤍"}
+        </button>
       </div>
       <p style={{ color: "#444", lineHeight: 1.6, marginBottom: 12 }}>{idea.description}</p>
       <p style={{ color: "#888", fontSize: 14 }}>

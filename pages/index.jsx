@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
 import IdeaCard from "../components/IdeaCard";
 
 function btnStyle(bg, color) {
@@ -11,22 +10,21 @@ export default function Home() {
   const [ideas, setIdeas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [view, setView] = useState("home");
 
+  // 从本地存储加载收藏
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
-    return () => listener.subscription.unsubscribe();
+    const savedFavorites = localStorage.getItem("builder-brain-favorites");
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
   }, []);
 
-  useEffect(() => { if (user) fetchFavorites(); }, [user]);
-
-  async function fetchFavorites() {
-    const { data } = await supabase.from("favorites").select("*").order("created_at", { ascending: false });
-    setFavorites(data || []);
-  }
+  // 保存收藏到本地存储
+  useEffect(() => {
+    localStorage.setItem("builder-brain-favorites", JSON.stringify(favorites));
+  }, [favorites]);
 
   async function handleGenerate() {
     if (!keywords.trim()) return;
@@ -47,6 +45,17 @@ export default function Home() {
     }
   }
 
+  function toggleFavorite(idea) {
+    setFavorites(prev => {
+      const isFavorited = prev.some(f => f.title === idea.title);
+      if (isFavorited) {
+        return prev.filter(f => f.title !== idea.title);
+      } else {
+        return [...prev, idea];
+      }
+    });
+  }
+
   const cardList = view === "profile" ? favorites : ideas;
 
   return (
@@ -57,14 +66,7 @@ export default function Home() {
           <p style={{ color: "#666", margin: "4px 0 0" }}>输入关键词，生成 5 个产品创意</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          {user ? (
-            <>
-              <button onClick={() => setView("profile")} style={btnStyle("#f5f5f5", "#333")}>我的收藏</button>
-              <button onClick={() => { supabase.auth.signOut(); setFavorites([]); setView("home"); }} style={btnStyle("#f5f5f5", "#333")}>退出</button>
-            </>
-          ) : (
-            <button onClick={() => supabase.auth.signInWithOAuth({ provider: "google" })} style={btnStyle("#1a1a1a", "#fff")}>Google 登录</button>
-          )}
+          <button onClick={() => setView("profile")} style={btnStyle("#f5f5f5", "#333")}>我的收藏</button>
         </div>
       </div>
 
@@ -89,7 +91,7 @@ export default function Home() {
       {cardList.length > 0 && (
         <div style={{ display: "grid", gap: 16 }}>
           {cardList.map((idea, i) => (
-            <IdeaCard key={i} idea={idea} user={user} favorites={favorites} onFavChange={fetchFavorites} />
+            <IdeaCard key={i} idea={idea} favorites={favorites} onFavChange={toggleFavorite} />
           ))}
         </div>
       )}
