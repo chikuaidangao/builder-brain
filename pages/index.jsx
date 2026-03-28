@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
 import IdeaCard from "../components/IdeaCard";
 
 function btnStyle(bg, color) {
@@ -10,21 +11,54 @@ export default function Home() {
   const [ideas, setIdeas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [view, setView] = useState("home");
 
-  // 从本地存储加载收藏
+  // 从本地存储加载收藏（未登录时使用）
   useEffect(() => {
-    const savedFavorites = localStorage.getItem("builder-brain-favorites");
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
+    if (!user) {
+      const savedFavorites = localStorage.getItem("builder-brain-favorites");
+      if (savedFavorites) {
+        setFavorites(JSON.parse(savedFavorites));
+      }
     }
+  }, [user]);
+
+  // 保存收藏到本地存储（未登录时使用）
+  useEffect(() => {
+    if (!user) {
+      localStorage.setItem("builder-brain-favorites", JSON.stringify(favorites));
+    }
+  }, [favorites, user]);
+
+  // Supabase 认证
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 保存收藏到本地存储
+  // 登录后从 Supabase 加载收藏
   useEffect(() => {
-    localStorage.setItem("builder-brain-favorites", JSON.stringify(favorites));
-  }, [favorites]);
+    if (user) {
+      fetchFavorites();
+    }
+  }, [user]);
+
+  async function fetchFavorites() {
+    try {
+      const { data } = await supabase.from("favorites").select("*").order("created_at", { ascending: false });
+      setFavorites(data || []);
+    } catch (err) {
+      console.error("Failed to fetch favorites:", err);
+      // 失败时使用本地存储
+      const savedFavorites = localStorage.getItem("builder-brain-favorites");
+      if (savedFavorites) {
+        setFavorites(JSON.parse(savedFavorites));
+      }
+    }
+  }
 
   async function handleGenerate() {
     if (!keywords.trim()) return;
@@ -45,7 +79,36 @@ export default function Home() {
     }
   }
 
-  function toggleFavorite(idea) {
+  async function toggleFavorite(idea) {
+    if (user) {
+      // 登录状态：使用 Supabase
+      try {
+        const isFavorited = favorites.some(f => f.title === idea.title);
+        if (isFavorited) {
+          const target = favorites.find(f => f.title === idea.title);
+          await supabase.from("favorites").delete().eq("id", target.id);
+        } else {
+          await supabase.from("favorites").insert({
+            user_id: user.id,
+            title: idea.title,
+            description: idea.description,
+            difficulty: idea.difficulty,
+            monetization: idea.monetization,
+          });
+        }
+        await fetchFavorites();
+      } catch (err) {
+        console.error("Failed to toggle favorite:", err);
+        // 失败时回退到本地存储
+        toggleLocalFavorite(idea);
+      }
+    } else {
+      // 未登录状态：使用本地存储
+      toggleLocalFavorite(idea);
+    }
+  }
+
+  function toggleLocalFavorite(idea) {
     setFavorites(prev => {
       const isFavorited = prev.some(f => f.title === idea.title);
       if (isFavorited) {
@@ -67,6 +130,11 @@ export default function Home() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setView("profile")} style={btnStyle("#f5f5f5", "#333")}>我的收藏</button>
+          {user ? (
+            <button onClick={() => { supabase.auth.signOut(); setFavorites([]); setView("home"); }} style={btnStyle("#f5f5f5", "#333")}>退出</button>
+          ) : (
+            <button onClick={() => supabase.auth.signInWithOAuth({ provider: "google" })} style={btnStyle("#1a1a1a", "#fff")}>Google 登录</button>
+          )}
         </div>
       </div>
 
