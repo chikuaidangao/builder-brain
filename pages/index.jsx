@@ -13,6 +13,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
+  const [searches, setSearches] = useState([]);
   const [view, setView] = useState("home");
 
   // 从本地存储加载收藏（未登录时使用）
@@ -39,10 +40,11 @@ export default function Home() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 登录后从 Supabase 加载收藏
+  // 登录后从 Supabase 加载收藏和搜索历史
   useEffect(() => {
     if (user) {
       fetchFavorites();
+      fetchSearches();
     }
   }, [user]);
 
@@ -60,10 +62,36 @@ export default function Home() {
     }
   }
 
+  async function fetchSearches() {
+    try {
+      const { data } = await supabase.from("searches").select("*").order("created_at", { ascending: false });
+      setSearches(data || []);
+    } catch (err) {
+      console.error("Failed to fetch searches:", err);
+    }
+  }
+
+  async function saveSearch(keywords) {
+    if (user) {
+      try {
+        await supabase.from("searches").insert({
+          user_id: user.id,
+          keywords
+        });
+        await fetchSearches();
+      } catch (err) {
+        console.error("Failed to save search:", err);
+      }
+    }
+  }
+
   async function handleGenerate() {
     if (!keywords.trim()) return;
     setLoading(true); setError(""); setIdeas([]);
     try {
+      // 保存搜索历史
+      await saveSearch(keywords);
+
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -119,6 +147,11 @@ export default function Home() {
     });
   }
 
+  function handleSearchClick(keyword) {
+    setKeywords(keyword);
+    setView("home");
+  }
+
   const cardList = view === "profile" ? favorites : ideas;
 
   return (
@@ -130,8 +163,9 @@ export default function Home() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setView("profile")} style={btnStyle("#f5f5f5", "#333")}>我的收藏</button>
+          {user && <button onClick={() => setView("history")} style={btnStyle("#f5f5f5", "#333")}>搜索历史</button>}
           {user ? (
-            <button onClick={() => { supabase.auth.signOut(); setFavorites([]); setView("home"); }} style={btnStyle("#f5f5f5", "#333")}>退出</button>
+            <button onClick={() => { supabase.auth.signOut(); setFavorites([]); setSearches([]); setView("home"); }} style={btnStyle("#f5f5f5", "#333")}>退出</button>
           ) : (
             <button onClick={() => supabase.auth.signInWithOAuth({ provider: "google" })} style={btnStyle("#1a1a1a", "#fff")}>Google 登录</button>
           )}
@@ -153,10 +187,29 @@ export default function Home() {
       )}
 
       {view === "profile" && <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>我的收藏 ({favorites.length})</h2>}
+      {view === "history" && <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>搜索历史 ({searches.length})</h2>}
 
       {error && <p style={{ color: "#9b2226", background: "#fdecea", padding: "12px 16px", borderRadius: 8, marginBottom: 24 }}>{error}</p>}
 
-      {cardList.length > 0 && (
+      {view === "history" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {searches.length > 0 ? (
+            searches.map((search, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: "1px solid #e5e5e5", borderRadius: 8, background: "#fff" }}>
+                <span style={{ color: "#333" }}>{search.keywords}</span>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <span style={{ color: "#999", fontSize: 12 }}>{new Date(search.created_at).toLocaleString()}</span>
+                  <button onClick={() => handleSearchClick(search.keywords)} style={btnStyle("#f5f5f5", "#333")}>重新搜索</button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p style={{ color: "#999", textAlign: "center", marginTop: 60 }}>还没有搜索历史</p>
+          )}
+        </div>
+      )}
+
+      {view !== "history" && cardList.length > 0 && (
         <div style={{ display: "grid", gap: 16 }}>
           {cardList.map((idea, i) => (
             <IdeaCard key={i} idea={idea} favorites={favorites} onFavChange={toggleFavorite} />
