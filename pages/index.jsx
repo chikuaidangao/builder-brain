@@ -1,288 +1,523 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import IdeaCard from '../components/IdeaCard';
 
-function btnStyle(bg, color, extra = {}) {
-  return { padding: '10px 20px', fontSize: 14, fontWeight: 600, background: bg, color, border: 'none', borderRadius: 8, cursor: 'pointer', ...extra };
-}
-
-const QUICK_DIRECTIONS = ['AI副业', '小红书', '电商', '设计工具', '自动化', '效率工具'];
-
-const TRENDS = [
-  { category: '内容创作', items: ['小红书封面', 'AI短视频', '自动剪辑', '爆款标题'] },
-  { category: '副业赚钱', items: ['AI变现工具', '自动接单', '数字产品', '订阅制工具'] },
-  { category: '电商', items: ['商品图生成', '评论分析', '选品工具', '广告素材生成'] },
-  { category: '效率工具', items: ['自动日报', '邮件总结', '会议纪要', '任务拆解'] },
-];
-
-const RANDOM_KEYWORDS = ['AI + 副业 + 自动化', '小红书 + 电商 + 选品', '设计工具 + SaaS', '效率工具 + 订阅', 'AI + 内容创作', '电商 + AI + 广告'];
-
-const FEATURED = [
-  { label: '本周值得关注', color: '#f0f0ff', border: '#534AB7', text: '#534AB7', items: ['AI Agent工具', '知识付费', '出海工具'] },
-  { label: '适合新手', color: '#e6f4ea', border: '#2d6a4f', text: '#2d6a4f', items: ['小红书运营工具', '简历优化', '自动日报'] },
-  { label: '更容易变现', color: '#fff8e1', border: '#b45309', text: '#b45309', items: ['订阅制工具', 'AI变现工具', '数字产品'] },
-];
-
-export default function Home() {
-  const [keywords, setKeywords] = useState('');
-  const [ideas, setIdeas] = useState([]);
-  const [summary, setSummary] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [user, setUser] = useState(null);
-  const [favorites, setFavorites] = useState([]);
-  const [searches, setSearches] = useState([]);
-  const [view, setView] = useState('home');
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (user) { fetchFavorites(); fetchSearches(); }
-  }, [user]);
-
-  async function fetchFavorites() {
-    const { data } = await supabase.from('favorites').select('*').order('created_at', { ascending: false });
-    setFavorites(data || []);
-  }
-
-  async function fetchSearches() {
-    const { data } = await supabase.from('searches').select('*').order('created_at', { ascending: false }).limit(20);
-    setSearches(data || []);
-  }
-
-  async function handleGenerate(kw) {
-    const query = kw || keywords;
-    if (!query.trim()) return;
-    setKeywords(query);
-    setLoading(true); setError(''); setIdeas([]); setSummary(''); setView('home');
-    try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords: query }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '请求失败');
-      setIdeas(data.ideas || []);
-      setSummary(data.summary || '');
-      if (user) {
-        await supabase.from('searches').insert({ user_id: user.id, keywords: query });
-        fetchSearches();
+// 生成学习计划的逻辑函数
+const generateStudyPlan = (goal, level, timePerDay, duration, style) => {
+  // 解析学习目标关键词
+  const goalLower = goal.toLowerCase();
+  let subject = 'General';
+  if (goalLower.includes('react')) subject = 'React';
+  else if (goalLower.includes('javascript')) subject = 'JavaScript';
+  else if (goalLower.includes('ielts')) subject = 'IELTS';
+  else if (goalLower.includes('english')) subject = 'English';
+  else if (goalLower.includes('design')) subject = 'Design';
+  
+  // 计算天数
+  let days = 3;
+  if (duration === '7 days') days = 7;
+  else if (duration === '14 days') days = 14;
+  
+  // 计算每天任务数
+  let tasksPerDay = 2;
+  if (timePerDay === '1 hour') tasksPerDay = 3;
+  else if (timePerDay === '2 hours') tasksPerDay = 4;
+  
+  // 生成每日计划
+  const dailyPlans = [];
+  for (let i = 1; i <= days; i++) {
+    // 根据级别和天数调整内容
+    let dayTheme = '';
+    let tasks = [];
+    
+    if (subject === 'JavaScript') {
+      if (i === 1) {
+        dayTheme = 'Introduction to JavaScript';
+        tasks = ['Learn basic syntax', 'Understand variables and data types'];
+      } else if (i === 2) {
+        dayTheme = 'Control Flow and Functions';
+        tasks = ['Learn if statements and loops', 'Understand functions and scope'];
+      } else if (i === 3) {
+        dayTheme = 'Objects and Arrays';
+        tasks = ['Learn object syntax', 'Understand array methods'];
+      } else if (i === 4) {
+        dayTheme = 'DOM Manipulation';
+        tasks = ['Learn to select elements', 'Understand event handling'];
+      } else if (i === 5) {
+        dayTheme = 'Asynchronous JavaScript';
+        tasks = ['Learn callbacks', 'Understand promises'];
+      } else if (i === 6) {
+        dayTheme = 'ES6+ Features';
+        tasks = ['Learn arrow functions', 'Understand template literals'];
+      } else {
+        dayTheme = 'Project Practice';
+        tasks = ['Build a small application', 'Review key concepts'];
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    } else if (subject === 'React') {
+      if (i === 1) {
+        dayTheme = 'React Fundamentals';
+        tasks = ['Learn JSX syntax', 'Understand components'];
+      } else if (i === 2) {
+        dayTheme = 'Props and State';
+        tasks = ['Learn to pass props', 'Understand state management'];
+      } else if (i === 3) {
+        dayTheme = 'Lifecycle Methods';
+        tasks = ['Learn component lifecycle', 'Understand hooks basics'];
+      } else if (i === 4) {
+        dayTheme = 'Hooks in Depth';
+        tasks = ['Learn useState', 'Understand useEffect'];
+      } else if (i === 5) {
+        dayTheme = 'Routing and Navigation';
+        tasks = ['Learn React Router', 'Understand navigation flow'];
+      } else if (i === 6) {
+        dayTheme = 'State Management';
+        tasks = ['Learn Context API', 'Understand useReducer'];
+      } else {
+        dayTheme = 'Project Development';
+        tasks = ['Build a React application', 'Optimize performance'];
+      }
+    } else if (subject === 'IELTS') {
+      if (i === 1) {
+        dayTheme = 'Speaking Basics';
+        tasks = ['Practice common topics', 'Learn pronunciation tips'];
+      } else if (i === 2) {
+        dayTheme = 'Speaking Strategies';
+        tasks = ['Learn to structure answers', 'Practice fluency'];
+      } else if (i === 3) {
+        dayTheme = 'Vocabulary Building';
+        tasks = ['Learn common IELTS words', 'Practice word usage'];
+      } else if (i === 4) {
+        dayTheme = 'Grammar Review';
+        tasks = ['Practice complex sentences', 'Learn grammatical structures'];
+      } else if (i === 5) {
+        dayTheme = 'Mock Interviews';
+        tasks = ['Practice full speaking test', 'Get feedback'];
+      } else if (i === 6) {
+        dayTheme = 'Topic Preparation';
+        tasks = ['Research common topics', 'Prepare sample answers'];
+      } else {
+        dayTheme = 'Final Review';
+        tasks = ['Practice under timed conditions', 'Review key strategies'];
+      }
+    } else {
+      // 通用学习计划
+      if (i === 1) {
+        dayTheme = 'Foundation Building';
+        tasks = ['Understand basic concepts', 'Set up learning environment'];
+      } else if (i === 2) {
+        dayTheme = 'Core Principles';
+        tasks = ['Learn key fundamentals', 'Practice basic exercises'];
+      } else if (i === 3) {
+        dayTheme = 'Application Skills';
+        tasks = ['Apply concepts to practice', 'Solve problems'];
+      } else if (i === 4) {
+        dayTheme = 'Advanced Topics';
+        tasks = ['Explore advanced concepts', 'Deepen understanding'];
+      } else if (i === 5) {
+        dayTheme = 'Practice and Refinement';
+        tasks = ['Practice with real-world examples', 'Refine skills'];
+      } else if (i === 6) {
+        dayTheme = 'Review and Consolidation';
+        tasks = ['Review key points', 'Identify weak areas'];
+      } else {
+        dayTheme = 'Final Assessment';
+        tasks = ['Test knowledge', 'Plan future learning'];
+      }
     }
+    
+    // 根据学习风格调整任务
+    if (style === 'Intensive') {
+      tasks.push('Additional practice exercises');
+      if (tasksPerDay > 2) tasks.push('Review previous material');
+    } else if (style === 'Relaxed') {
+      tasks = tasks.slice(0, Math.max(1, tasksPerDay - 1));
+      tasks.push('Take breaks and reflect');
+    }
+    
+    // 确保任务数量符合要求
+    tasks = tasks.slice(0, tasksPerDay);
+    
+    dailyPlans.push({
+      day: i,
+      theme: dayTheme,
+      tasks: tasks,
+      focus: level === 'Beginner' ? 'Understanding' : level === 'Intermediate' ? 'Application' : 'Mastery',
+      duration: timePerDay
+    });
   }
+  
+  // 生成 AI 总结
+  const intensity = style === 'Intensive' ? 'High' : style === 'Relaxed' ? 'Low' : 'Medium';
+  const successRate = Math.floor(Math.random() * 10) + 85; // 85-94%
+  const bestTime = '7:00 PM - 9:00 PM';
+  
+  // 生成 AI 提示
+  const tips = [
+    'Start with the hardest task first',
+    'Spend 10 minutes reviewing yesterday\'s content',
+    'Keep notes concise and practical'
+  ];
+  
+  return {
+    summary: {
+      intensity,
+      successRate,
+      bestTime
+    },
+    dailyPlans,
+    tips,
+    progress: {
+      completionRate: 0,
+      difficultyLevel: level === 'Beginner' ? 'Easy' : level === 'Intermediate' ? 'Medium' : 'Hard',
+      consistency: 'Maintain daily practice for best results'
+    }
+  };
+};
 
-  function handleRandom() {
-    const kw = RANDOM_KEYWORDS[Math.floor(Math.random() * RANDOM_KEYWORDS.length)];
-    handleGenerate(kw);
-  }
-
-  function handleShare() {
-    const url = `${window.location.origin}?keywords=${encodeURIComponent(keywords)}`;
-    navigator.clipboard.writeText(url);
-    alert('链接已复制，分享给朋友吧！');
-  }
-
+const AIDailyStudyPlanner = () => {
+  // 状态管理
+  const [goal, setGoal] = useState('Learn JavaScript basics in 7 days');
+  const [level, setLevel] = useState('Beginner');
+  const [timePerDay, setTimePerDay] = useState('1 hour');
+  const [duration, setDuration] = useState('7 days');
+  const [style, setStyle] = useState('Efficient');
+  const [isLoading, setIsLoading] = useState(false);
+  const [plan, setPlan] = useState(null);
+  const [expandedDays, setExpandedDays] = useState({});
+  
+  // 初始加载默认计划
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const kw = params.get('keywords');
-    if (kw) handleGenerate(kw);
+    const defaultPlan = generateStudyPlan(
+      'Learn JavaScript basics in 7 days',
+      'Beginner',
+      '1 hour',
+      '7 days',
+      'Efficient'
+    );
+    setPlan(defaultPlan);
   }, []);
-
-  async function toggleFavorite() {
-    await fetchFavorites();
-  }
-
+  
+  // 生成计划
+  const handleGenerate = () => {
+    setIsLoading(true);
+    // 模拟加载延迟
+    setTimeout(() => {
+      const newPlan = generateStudyPlan(goal, level, timePerDay, duration, style);
+      setPlan(newPlan);
+      setIsLoading(false);
+    }, 1000);
+  };
+  
+  // 填充示例
+  const handleFillExample = () => {
+    setGoal('Learn JavaScript basics in 7 days');
+    setLevel('Beginner');
+    setTimePerDay('1 hour');
+    setDuration('7 days');
+    setStyle('Efficient');
+  };
+  
+  // 切换每日计划展开/收起
+  const toggleDay = (day) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [day]: !prev[day]
+    }));
+  };
+  
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px 24px', fontFamily: 'sans-serif' }}>
-
-      {/* 顶部导航 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 48 }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, cursor: 'pointer' }} onClick={() => setView('home')}>Builder Brain</h1>
-          <p style={{ color: '#666', margin: '4px 0 0', fontSize: 14 }}>为 AI Builder 和独立开发者设计的产品灵感工具</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* 顶部标题 */}
+      <header className="py-8 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 text-transparent bg-clip-text mb-2">
+            AI Daily Study Planner
+          </h1>
+          <p className="text-slate-600 text-lg">
+            Your personalized AI-powered learning companion
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {user ? (
-            <>
-              <button onClick={() => setView('profile')} style={btnStyle('#f5f5f5', '#333')}>我的收藏</button>
-              <button onClick={() => setView('history')} style={btnStyle('#f5f5f5', '#333')}>搜索历史</button>
-              <button onClick={() => { supabase.auth.signOut(); setFavorites([]); setSearches([]); setView('home'); }} style={btnStyle('#f5f5f5', '#333')}>退出</button>
-            </>
-          ) : (
-            <button onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })} style={btnStyle('#1a1a1a', '#fff')}>Google 登录</button>
-          )}
-        </div>
-      </div>
-
-      {view === 'home' && (
-        <>
-          {/* Hero 区 */}
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <h2 style={{ fontSize: 36, fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.5px' }}>
-              从趋势中发现<br />值得开发的产品 idea
-            </h2>
-            <p style={{ color: '#888', fontSize: 15, margin: 0 }}>
-              输入你感兴趣的方向，AI 帮你拆解成可落地的产品机会
-            </p>
-          </div>
-
-          {/* 搜索区 */}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
-              <input
-                type='text'
-                placeholder='例如：AI + 小红书 + 电商'
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-                style={{ flex: 1, padding: '14px 18px', fontSize: 16, border: '1px solid #ddd', borderRadius: 10, outline: 'none' }}
-              />
-              <button
-                onClick={() => handleGenerate()}
-                disabled={loading || !keywords.trim()}
-                style={btnStyle(loading ? '#ccc' : '#1a1a1a', '#fff', { padding: '14px 28px', fontSize: 15, borderRadius: 10 })}
-              >
-                {loading ? '生成中...' : '生成创意'}
-              </button>
-            </div>
-            <p style={{ fontSize: 12, color: '#aaa', margin: 0, textAlign: 'center' }}>支持多个关键词组合，用 + 分隔效果更好</p>
-          </div>
-
-          {/* 快速方向 */}
-          <div style={{ marginBottom: 36 }}>
-            <p style={{ fontSize: 12, color: '#bbb', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>快速方向</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {QUICK_DIRECTIONS.map((d) => (
-                <button
-                  key={d}
-                  onClick={() => handleGenerate(d)}
-                  style={btnStyle('#f5f5f5', '#333', { fontSize: 13, padding: '7px 16px', borderRadius: 20 })}
+      </header>
+      
+      {/* 主要内容 */}
+      <main className="max-w-7xl mx-auto px-6 md:px-12 pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* 左侧输入面板 */}
+          <div className="card glass-effect">
+            <h2 className="text-2xl font-bold mb-6">Create Your Plan</h2>
+            
+            <div className="space-y-5">
+              {/* 学习目标 */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Learning Goal
+                </label>
+                <input
+                  type="text"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., Learn React in 7 days"
+                />
+              </div>
+              
+              {/* 当前水平 */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Current Level
+                </label>
+                <select
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value)}
+                  className="select-field"
                 >
-                  {d}
+                  <option value="Beginner">Beginner</option>
+                  <option value="Elementary">Elementary</option>
+                  <option value="Intermediate">Intermediate</option>
+                </select>
+              </div>
+              
+              {/* 每天可用时间 */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Time per Day
+                </label>
+                <select
+                  value={timePerDay}
+                  onChange={(e) => setTimePerDay(e.target.value)}
+                  className="select-field"
+                >
+                  <option value="30 mins">30 mins</option>
+                  <option value="1 hour">1 hour</option>
+                  <option value="2 hours">2 hours</option>
+                </select>
+              </div>
+              
+              {/* 学习周期 */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Duration
+                </label>
+                <select
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  className="select-field"
+                >
+                  <option value="3 days">3 days</option>
+                  <option value="7 days">7 days</option>
+                  <option value="14 days">14 days</option>
+                </select>
+              </div>
+              
+              {/* 学习风格 */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Learning Style
+                </label>
+                <select
+                  value={style}
+                  onChange={(e) => setStyle(e.target.value)}
+                  className="select-field"
+                >
+                  <option value="Relaxed">Relaxed</option>
+                  <option value="Efficient">Efficient</option>
+                  <option value="Intensive">Intensive</option>
+                </select>
+              </div>
+              
+              {/* 按钮组 */}
+              <div className="pt-4 space-y-3">
+                <button
+                  onClick={handleGenerate}
+                  className="btn btn-primary w-full flex items-center justify-center"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate Plan'
+                  )}
                 </button>
-              ))}
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleFillExample}
+                    className="btn btn-secondary"
+                  >
+                    Fill Example
+                  </button>
+                  <button
+                    onClick={handleGenerate}
+                    className="btn btn-secondary"
+                    disabled={isLoading}
+                  >
+                    Regenerate
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* 今日推荐 */}
-          <div style={{ marginBottom: 36 }}>
-            <p style={{ fontSize: 12, color: '#bbb', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 1 }}>今日推荐</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              {FEATURED.map((f) => (
-                <div key={f.label} style={{ background: f.color, borderRadius: 12, padding: 16, borderLeft: `3px solid ${f.border}` }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: f.text, margin: '0 0 12px' }}>{f.label}</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {f.items.map((item) => (
-                      <button
-                        key={item}
-                        onClick={() => handleGenerate(item)}
-                        style={{ background: '#fff', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#333', cursor: 'pointer', textAlign: 'left' }}
+          
+          {/* 右侧结果展示面板 */}
+          <div className="space-y-6">
+            {plan && (
+              <>
+                {/* AI 总结卡片 */}
+                <div className="card bg-gradient-to-br from-indigo-500/5 to-purple-600/5 border border-indigo-500/10">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold mb-3">AI Summary</h3>
+                      <p className="text-slate-700 mb-4">
+                        Your personalized study plan is ready. Based on your goal, current level, and time available, here is your optimized daily learning path.
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-slate-500">Recommended intensity</p>
+                          <p className="font-medium">{plan.summary.intensity}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-500">Estimated success rate</p>
+                          <p className="font-medium">{plan.summary.successRate}%</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-sm text-slate-500">Best study time</p>
+                          <p className="font-medium">{plan.summary.bestTime}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* 每日计划卡片 */}
+                <div>
+                  <h3 className="text-xl font-bold mb-4">Daily Plan</h3>
+                  <div className="space-y-4">
+                    {plan.dailyPlans.map((dayPlan) => (
+                      <div 
+                        key={dayPlan.day} 
+                        className="card border border-slate-100 hover:border-primary/30"
                       >
-                        {item}
-                      </button>
+                        <div 
+                          className="flex items-center justify-between cursor-pointer"
+                          onClick={() => toggleDay(dayPlan.day)}
+                        >
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold mr-3">
+                              {dayPlan.day}
+                            </div>
+                            <div>
+                              <h4 className="font-bold">Day {dayPlan.day}</h4>
+                              <p className="text-slate-600">{dayPlan.theme}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <span className="badge bg-indigo-100 text-indigo-700">
+                              {dayPlan.focus}
+                            </span>
+                            <svg 
+                              xmlns="http://www.w3.org/2000/svg" 
+                              className={`h-5 w-5 text-slate-500 transition-transform ${expandedDays[dayPlan.day] ? 'transform rotate-180' : ''}`} 
+                              fill="none" 
+                              viewBox="0 0 24 24" 
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
+                        
+                        {expandedDays[dayPlan.day] && (
+                          <div className="mt-4 pt-4 border-t border-slate-100">
+                            <div className="mb-3">
+                              <p className="text-sm text-slate-500">Estimated duration</p>
+                              <p className="font-medium">{dayPlan.duration}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-700 mb-2">Tasks:</p>
+                              <ul className="space-y-2">
+                                {dayPlan.tasks.map((task, index) => (
+                                  <li key={index} className="flex items-start">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span className="text-slate-700">{task}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 热门趋势 */}
-          <div style={{ marginBottom: 36 }}>
-            <p style={{ fontSize: 12, color: '#bbb', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 1 }}>热门趋势</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {TRENDS.map((t) => (
-                <div key={t.category} style={{ border: '1px solid #eee', borderRadius: 12, padding: 16 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#333', margin: '0 0 10px' }}>{t.category}</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {t.items.map((item) => (
-                      <button
-                        key={item}
-                        onClick={() => handleGenerate(item)}
-                        style={{ background: '#f5f5f5', border: 'none', borderRadius: 16, padding: '5px 12px', fontSize: 12, color: '#555', cursor: 'pointer' }}
-                      >
-                        {item}
-                      </button>
-                    ))}
+                
+                {/* 进度模块 */}
+                <div className="card">
+                  <h3 className="text-xl font-bold mb-4">Progress</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <p className="text-sm font-medium text-slate-700">Plan completion rate</p>
+                        <p className="text-sm font-medium text-indigo-500">{plan.progress.completionRate}%</p>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2.5">
+                        <div 
+                          className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" 
+                          style={{ width: `${plan.progress.completionRate}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Difficulty level</p>
+                      <p className="font-medium">{plan.progress.difficultyLevel}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Weekly consistency suggestion</p>
+                      <p className="font-medium">{plan.progress.consistency}</p>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 随机生成 */}
-          <div style={{ marginBottom: 48, textAlign: 'center' }}>
-            <button
-              onClick={handleRandom}
-              style={btnStyle('#f0f0ff', '#534AB7', { fontSize: 15, padding: '14px 36px', borderRadius: 28 })}
-            >
-              ✨ 随机生成创业机会
-            </button>
-            <p style={{ fontSize: 12, color: '#bbb', marginTop: 8 }}>不知道从哪里开始？让我们帮你随机挑一个方向</p>
-          </div>
-        </>
-      )}
-
-      {view === 'profile' && <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>我的收藏 ({favorites.length})</h2>}
-
-      {view === 'history' && (
-        <div style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>搜索历史</h2>
-          {searches.length === 0 && <p style={{ color: '#999' }}>还没有搜索记录</p>}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {searches.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => handleGenerate(s.keywords)}
-                style={{ padding: '6px 14px', borderRadius: 20, border: '1px solid #ddd', background: '#f5f5f5', cursor: 'pointer', fontSize: 14 }}
-              >
-                {s.keywords}
-              </button>
-            ))}
+                
+                {/* AI 提示模块 */}
+                <div className="card bg-gradient-to-br from-slate-50 to-slate-100">
+                  <h3 className="text-xl font-bold mb-4">AI Tips</h3>
+                  <ul className="space-y-3">
+                    {plan.tips.map((tip, index) => (
+                      <li key={index} className="flex items-start">
+                        <div className="w-6 h-6 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold mr-3 flex-shrink-0">
+                          {index + 1}
+                        </div>
+                        <span className="text-slate-700">{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
           </div>
         </div>
-      )}
-
-      {error && <p style={{ color: '#9b2226', background: '#fdecea', padding: '12px 16px', borderRadius: 8, marginBottom: 24 }}>{error}</p>}
-
-      {ideas.length > 0 && view === 'home' && (
-        <>
-          {summary && (
-            <div style={{ background: '#f9f9f9', borderRadius: 10, padding: '14px 18px', marginBottom: 20, borderLeft: '3px solid #534AB7' }}>
-              <p style={{ fontSize: 14, color: '#444', margin: 0, lineHeight: 1.6 }}>{summary}</p>
-            </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-            <button onClick={handleShare} style={btnStyle('#f5f5f5', '#333')}>分享这些创意</button>
-          </div>
-          <div style={{ display: 'grid', gap: 16 }}>
-            {ideas.map((idea, i) => (
-              <IdeaCard key={i} idea={idea} user={user} favorites={favorites} onFavChange={toggleFavorite} />
-            ))}
-          </div>
-        </>
-      )}
-
-      {view === 'profile' && (
-        <div style={{ display: 'grid', gap: 16 }}>
-          {favorites.length === 0 ? (
-            <p style={{ color: '#999', textAlign: 'center', marginTop: 60 }}>还没有收藏，去生成一些创意吧</p>
-          ) : (
-            favorites.map((idea, i) => (
-              <IdeaCard key={i} idea={idea} user={user} favorites={favorites} onFavChange={toggleFavorite} />
-            ))
-          )}
+      </main>
+      
+      {/* 页脚 */}
+      <footer className="py-6 px-6 md:px-12 bg-white/50 backdrop-blur-sm border-t border-slate-200">
+        <div className="max-w-7xl mx-auto text-center text-slate-600 text-sm">
+          <p>AI Daily Study Planner - Your personalized learning companion</p>
         </div>
-      )}
+      </footer>
     </div>
   );
-}
+};
+
+export default AIDailyStudyPlanner;
