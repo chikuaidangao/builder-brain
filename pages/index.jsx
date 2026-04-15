@@ -1,523 +1,661 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import IdeaCard from '../components/IdeaCard';
 
-// 生成学习计划的逻辑函数
-const generateStudyPlan = (goal, level, timePerDay, duration, style) => {
-  // 解析学习目标关键词
-  const goalLower = goal.toLowerCase();
-  let subject = 'General';
-  if (goalLower.includes('react')) subject = 'React';
-  else if (goalLower.includes('javascript')) subject = 'JavaScript';
-  else if (goalLower.includes('ielts')) subject = 'IELTS';
-  else if (goalLower.includes('english')) subject = 'English';
-  else if (goalLower.includes('design')) subject = 'Design';
-  
-  // 计算天数
-  let days = 3;
-  if (duration === '7 days') days = 7;
-  else if (duration === '14 days') days = 14;
-  
-  // 计算每天任务数
-  let tasksPerDay = 2;
-  if (timePerDay === '1 hour') tasksPerDay = 3;
-  else if (timePerDay === '2 hours') tasksPerDay = 4;
-  
-  // 生成每日计划
-  const dailyPlans = [];
-  for (let i = 1; i <= days; i++) {
-    // 根据级别和天数调整内容
-    let dayTheme = '';
-    let tasks = [];
-    
-    if (subject === 'JavaScript') {
-      if (i === 1) {
-        dayTheme = 'Introduction to JavaScript';
-        tasks = ['Learn basic syntax', 'Understand variables and data types'];
-      } else if (i === 2) {
-        dayTheme = 'Control Flow and Functions';
-        tasks = ['Learn if statements and loops', 'Understand functions and scope'];
-      } else if (i === 3) {
-        dayTheme = 'Objects and Arrays';
-        tasks = ['Learn object syntax', 'Understand array methods'];
-      } else if (i === 4) {
-        dayTheme = 'DOM Manipulation';
-        tasks = ['Learn to select elements', 'Understand event handling'];
-      } else if (i === 5) {
-        dayTheme = 'Asynchronous JavaScript';
-        tasks = ['Learn callbacks', 'Understand promises'];
-      } else if (i === 6) {
-        dayTheme = 'ES6+ Features';
-        tasks = ['Learn arrow functions', 'Understand template literals'];
-      } else {
-        dayTheme = 'Project Practice';
-        tasks = ['Build a small application', 'Review key concepts'];
-      }
-    } else if (subject === 'React') {
-      if (i === 1) {
-        dayTheme = 'React Fundamentals';
-        tasks = ['Learn JSX syntax', 'Understand components'];
-      } else if (i === 2) {
-        dayTheme = 'Props and State';
-        tasks = ['Learn to pass props', 'Understand state management'];
-      } else if (i === 3) {
-        dayTheme = 'Lifecycle Methods';
-        tasks = ['Learn component lifecycle', 'Understand hooks basics'];
-      } else if (i === 4) {
-        dayTheme = 'Hooks in Depth';
-        tasks = ['Learn useState', 'Understand useEffect'];
-      } else if (i === 5) {
-        dayTheme = 'Routing and Navigation';
-        tasks = ['Learn React Router', 'Understand navigation flow'];
-      } else if (i === 6) {
-        dayTheme = 'State Management';
-        tasks = ['Learn Context API', 'Understand useReducer'];
-      } else {
-        dayTheme = 'Project Development';
-        tasks = ['Build a React application', 'Optimize performance'];
-      }
-    } else if (subject === 'IELTS') {
-      if (i === 1) {
-        dayTheme = 'Speaking Basics';
-        tasks = ['Practice common topics', 'Learn pronunciation tips'];
-      } else if (i === 2) {
-        dayTheme = 'Speaking Strategies';
-        tasks = ['Learn to structure answers', 'Practice fluency'];
-      } else if (i === 3) {
-        dayTheme = 'Vocabulary Building';
-        tasks = ['Learn common IELTS words', 'Practice word usage'];
-      } else if (i === 4) {
-        dayTheme = 'Grammar Review';
-        tasks = ['Practice complex sentences', 'Learn grammatical structures'];
-      } else if (i === 5) {
-        dayTheme = 'Mock Interviews';
-        tasks = ['Practice full speaking test', 'Get feedback'];
-      } else if (i === 6) {
-        dayTheme = 'Topic Preparation';
-        tasks = ['Research common topics', 'Prepare sample answers'];
-      } else {
-        dayTheme = 'Final Review';
-        tasks = ['Practice under timed conditions', 'Review key strategies'];
-      }
-    } else {
-      // 通用学习计划
-      if (i === 1) {
-        dayTheme = 'Foundation Building';
-        tasks = ['Understand basic concepts', 'Set up learning environment'];
-      } else if (i === 2) {
-        dayTheme = 'Core Principles';
-        tasks = ['Learn key fundamentals', 'Practice basic exercises'];
-      } else if (i === 3) {
-        dayTheme = 'Application Skills';
-        tasks = ['Apply concepts to practice', 'Solve problems'];
-      } else if (i === 4) {
-        dayTheme = 'Advanced Topics';
-        tasks = ['Explore advanced concepts', 'Deepen understanding'];
-      } else if (i === 5) {
-        dayTheme = 'Practice and Refinement';
-        tasks = ['Practice with real-world examples', 'Refine skills'];
-      } else if (i === 6) {
-        dayTheme = 'Review and Consolidation';
-        tasks = ['Review key points', 'Identify weak areas'];
-      } else {
-        dayTheme = 'Final Assessment';
-        tasks = ['Test knowledge', 'Plan future learning'];
-      }
-    }
-    
-    // 根据学习风格调整任务
-    if (style === 'Intensive') {
-      tasks.push('Additional practice exercises');
-      if (tasksPerDay > 2) tasks.push('Review previous material');
-    } else if (style === 'Relaxed') {
-      tasks = tasks.slice(0, Math.max(1, tasksPerDay - 1));
-      tasks.push('Take breaks and reflect');
-    }
-    
-    // 确保任务数量符合要求
-    tasks = tasks.slice(0, tasksPerDay);
-    
-    dailyPlans.push({
-      day: i,
-      theme: dayTheme,
-      tasks: tasks,
-      focus: level === 'Beginner' ? 'Understanding' : level === 'Intermediate' ? 'Application' : 'Mastery',
-      duration: timePerDay
-    });
+// ─── 数据 ───────────────────────────────────────────
+const QUICK_DIRECTIONS = ['AI副业', '小红书', '电商', '设计工具', '自动化', '效率工具'];
+
+const TRENDS = [
+  { category: '内容创作', items: ['小红书封面', 'AI短视频', '自动剪辑', '爆款标题'] },
+  { category: '副业赚钱', items: ['AI变现工具', '自动接单', '数字产品', '订阅制工具'] },
+  { category: '电商', items: ['商品图生成', '评论分析', '选品工具', '广告素材生成'] },
+  { category: '效率工具', items: ['自动日报', '邮件总结', '会议纪要', '任务拆解'] },
+];
+
+const FEATURED = [
+  { label: '本周值得关注', color: '#f0ece6', border: '#534AB7', text: '#534AB7', items: ['AI Agent工具', '知识付费', '出海工具'] },
+  { label: '适合新手', color: '#e6f4ea', border: '#2d6a4f', text: '#2d6a4f', items: ['小红书运营工具', '简历优化', '自动日报'] },
+  { label: '更容易变现', color: '#fff8e1', border: '#b45309', text: '#b45309', items: ['订阅制工具', 'AI变现工具', '数字产品'] },
+];
+
+const RANDOM_KEYWORDS = ['AI + 副业 + 自动化', '小红书 + 电商 + 选品', '设计工具 + SaaS', '效率工具 + 订阅', 'AI + 内容创作', '电商 + AI + 广告'];
+
+// ─── 对比视图组件 ────────────────────────────────────
+function ComparisonView({ ideas }) {
+  const difficultyMap = { easy: { label: '简单', width: 30, color: '#2d6a4f', bg: '#e6f4ea' }, medium: { label: '中等', width: 55, color: '#b45309', bg: '#fff8e1' }, hard: { label: '困难', width: 80, color: '#9b2226', bg: '#fdecea' } };
+  const monetMap = { '高': { width: 80, color: '#534AB7' }, '中': { width: 55, color: '#534AB7' }, '低': { width: 30, color: '#534AB7' } };
+
+  function getMonetLevel(idea) {
+    const m = (idea.monetization || '').toLowerCase();
+    if (m.includes('订阅') || m.includes('高') || m.includes('强')) return '高';
+    if (m.includes('广告') || m.includes('中')) return '中';
+    return '低';
   }
-  
-  // 生成 AI 总结
-  const intensity = style === 'Intensive' ? 'High' : style === 'Relaxed' ? 'Low' : 'Medium';
-  const successRate = Math.floor(Math.random() * 10) + 85; // 85-94%
-  const bestTime = '7:00 PM - 9:00 PM';
-  
-  // 生成 AI 提示
-  const tips = [
-    'Start with the hardest task first',
-    'Spend 10 minutes reviewing yesterday\'s content',
-    'Keep notes concise and practical'
-  ];
-  
-  return {
-    summary: {
-      intensity,
-      successRate,
-      bestTime
-    },
-    dailyPlans,
-    tips,
-    progress: {
-      completionRate: 0,
-      difficultyLevel: level === 'Beginner' ? 'Easy' : level === 'Intermediate' ? 'Medium' : 'Hard',
-      consistency: 'Maintain daily practice for best results'
-    }
-  };
-};
 
-const AIDailyStudyPlanner = () => {
-  // 状态管理
-  const [goal, setGoal] = useState('Learn JavaScript basics in 7 days');
-  const [level, setLevel] = useState('Beginner');
-  const [timePerDay, setTimePerDay] = useState('1 hour');
-  const [duration, setDuration] = useState('7 days');
-  const [style, setStyle] = useState('Efficient');
-  const [isLoading, setIsLoading] = useState(false);
-  const [plan, setPlan] = useState(null);
-  const [expandedDays, setExpandedDays] = useState({});
-  
-  // 初始加载默认计划
-  useEffect(() => {
-    const defaultPlan = generateStudyPlan(
-      'Learn JavaScript basics in 7 days',
-      'Beginner',
-      '1 hour',
-      '7 days',
-      'Efficient'
-    );
-    setPlan(defaultPlan);
-  }, []);
-  
-  // 生成计划
-  const handleGenerate = () => {
-    setIsLoading(true);
-    // 模拟加载延迟
-    setTimeout(() => {
-      const newPlan = generateStudyPlan(goal, level, timePerDay, duration, style);
-      setPlan(newPlan);
-      setIsLoading(false);
-    }, 1000);
-  };
-  
-  // 填充示例
-  const handleFillExample = () => {
-    setGoal('Learn JavaScript basics in 7 days');
-    setLevel('Beginner');
-    setTimePerDay('1 hour');
-    setDuration('7 days');
-    setStyle('Efficient');
-  };
-  
-  // 切换每日计划展开/收起
-  const toggleDay = (day) => {
-    setExpandedDays(prev => ({
-      ...prev,
-      [day]: !prev[day]
-    }));
-  };
-  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* 顶部标题 */}
-      <header className="py-8 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 text-transparent bg-clip-text mb-2">
-            AI Daily Study Planner
-          </h1>
-          <p className="text-slate-600 text-lg">
-            Your personalized AI-powered learning companion
-          </p>
+    <div style={{
+      background: '#fff', borderRadius: 14, padding: '24px 28px',
+      border: '1px solid #e8e4de', marginBottom: 32, maxWidth: 680, margin: '0 auto 32px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>对比视图</h3>
+        <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#999' }}>
+          <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: '#e6f4ea', marginRight: 4, verticalAlign: 'middle' }} />开发难度</span>
+          <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: '#f0e8ff', marginRight: 4, verticalAlign: 'middle' }} />变现潜力</span>
         </div>
-      </header>
-      
-      {/* 主要内容 */}
-      <main className="max-w-7xl mx-auto px-6 md:px-12 pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 左侧输入面板 */}
-          <div className="card glass-effect">
-            <h2 className="text-2xl font-bold mb-6">Create Your Plan</h2>
-            
-            <div className="space-y-5">
-              {/* 学习目标 */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Learning Goal
-                </label>
-                <input
-                  type="text"
-                  value={goal}
-                  onChange={(e) => setGoal(e.target.value)}
-                  className="input-field"
-                  placeholder="e.g., Learn React in 7 days"
-                />
-              </div>
-              
-              {/* 当前水平 */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Current Level
-                </label>
-                <select
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  className="select-field"
-                >
-                  <option value="Beginner">Beginner</option>
-                  <option value="Elementary">Elementary</option>
-                  <option value="Intermediate">Intermediate</option>
-                </select>
-              </div>
-              
-              {/* 每天可用时间 */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Time per Day
-                </label>
-                <select
-                  value={timePerDay}
-                  onChange={(e) => setTimePerDay(e.target.value)}
-                  className="select-field"
-                >
-                  <option value="30 mins">30 mins</option>
-                  <option value="1 hour">1 hour</option>
-                  <option value="2 hours">2 hours</option>
-                </select>
-              </div>
-              
-              {/* 学习周期 */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Duration
-                </label>
-                <select
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  className="select-field"
-                >
-                  <option value="3 days">3 days</option>
-                  <option value="7 days">7 days</option>
-                  <option value="14 days">14 days</option>
-                </select>
-              </div>
-              
-              {/* 学习风格 */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Learning Style
-                </label>
-                <select
-                  value={style}
-                  onChange={(e) => setStyle(e.target.value)}
-                  className="select-field"
-                >
-                  <option value="Relaxed">Relaxed</option>
-                  <option value="Efficient">Efficient</option>
-                  <option value="Intensive">Intensive</option>
-                </select>
-              </div>
-              
-              {/* 按钮组 */}
-              <div className="pt-4 space-y-3">
-                <button
-                  onClick={handleGenerate}
-                  className="btn btn-primary w-full flex items-center justify-center"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate Plan'
-                  )}
-                </button>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={handleFillExample}
-                    className="btn btn-secondary"
-                  >
-                    Fill Example
-                  </button>
-                  <button
-                    onClick={handleGenerate}
-                    className="btn btn-secondary"
-                    disabled={isLoading}
-                  >
-                    Regenerate
-                  </button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {ideas.map((idea, i) => {
+          const diff = difficultyMap[idea.difficulty] || difficultyMap.medium;
+          const monLevel = getMonetLevel(idea);
+          const mon = monetMap[monLevel] || monetMap['中'];
+          return (
+            <div key={i}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#333', margin: '0 0 6px' }}>{idea.title}</p>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ height: 8, background: '#f5f5f5', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${diff.width}%`, background: diff.bg, borderRadius: 4, transition: 'width 0.5s' }} />
+                  </div>
+                  <span style={{ fontSize: 10, color: diff.color, fontWeight: 600 }}>{diff.label}</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ height: 8, background: '#f5f5f5', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${mon.width}%`, background: '#f0e8ff', borderRadius: 4, transition: 'width 0.5s' }} />
+                  </div>
+                  <span style={{ fontSize: 10, color: mon.color, fontWeight: 600 }}>{monLevel}</span>
                 </div>
               </div>
             </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── 主组件 ──────────────────────────────────────────
+export default function Home() {
+  const [keywords, setKeywords] = useState('');
+  const [ideas, setIdeas] = useState([]);
+  const [summary, setSummary] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [user, setUser] = useState(null);
+  const [favorites, setFavorites] = useState([]);
+  const [searches, setSearches] = useState([]);
+  const [view, setView] = useState('home'); // home | results | profile | history
+  const [filterType, setFilterType] = useState('全部');
+  const [generatedCount] = useState(128); // 静态占位数据
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) { fetchFavorites(); fetchSearches(); }
+  }, [user]);
+
+  async function fetchFavorites() {
+    const { data } = await supabase.from('favorites').select('*').order('created_at', { ascending: false });
+    setFavorites(data || []);
+  }
+
+  async function fetchSearches() {
+    const { data } = await supabase.from('searches').select('*').order('created_at', { ascending: false }).limit(30);
+    setSearches(data || []);
+  }
+
+  async function handleGenerate(kw) {
+    const query = kw || keywords;
+    if (!query.trim()) return;
+    setKeywords(query);
+    setLoading(true); setError(''); setIdeas([]); setSummary(''); setView('results');
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keywords: query }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '请求失败');
+      setIdeas(data.ideas || []);
+      setSummary(data.summary || '');
+      if (user) {
+        await supabase.from('searches').insert({ user_id: user.id, keywords: query });
+        fetchSearches();
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleRandom() {
+    const kw = RANDOM_KEYWORDS[Math.floor(Math.random() * RANDOM_KEYWORDS.length)];
+    handleGenerate(kw);
+  }
+
+  function handleShare() {
+    const url = `${window.location.origin}?keywords=${encodeURIComponent(keywords)}`;
+    navigator.clipboard.writeText(url);
+    alert('链接已复制，分享给朋友吧！');
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const kw = params.get('keywords');
+    if (kw) handleGenerate(kw);
+  }, []);
+
+  async function toggleFavorite() {
+    await fetchFavorites();
+  }
+
+  function handleKeywordClick(kw) {
+    handleGenerate(kw);
+  }
+
+  // ─── 通用样式 ──────────────────────────────────────
+  const containerStyle = { maxWidth: 680, margin: '0 auto', padding: '0 24px' };
+  const sectionTitleStyle = { fontSize: 11, color: '#bbb', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 };
+
+  // ─── 历史记录分组 ──────────────────────────────────
+  function groupSearchesByDate(list) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+    const groups = { '今天': [], '昨天': [], '更早': [] };
+    list.forEach(s => {
+      const d = new Date(s.created_at);
+      if (d >= today) groups['今天'].push(s);
+      else if (d >= yesterday) groups['昨天'].push(s);
+      else groups['更早'].push(s);
+    });
+    return Object.entries(groups).filter(([,v]) => v.length > 0);
+  }
+
+  function formatTime(dateStr) {
+    const d = new Date(dateStr);
+    return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+  }
+
+  // ─── 收藏页筛选 ────────────────────────────────────
+  const filteredFavorites = filterType === '全部'
+    ? favorites
+    : favorites.filter(f => (f.idea_type || f.ideaType || '工具型') === filterType);
+
+  // ═══════════════════════════════════════════════════
+  return (
+    <div style={{ minHeight: '100vh', background: '#FAF8F3' }}>
+
+      {/* ─── 顶部导航 ─────────────────────────────── */}
+      <nav style={{
+        background: '#1a1a1a', padding: '0 24px',
+        position: 'sticky', top: 0, zIndex: 100,
+      }}>
+        <div style={{ maxWidth: 680, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => setView('home')}>
+            <span style={{ fontSize: 20, fontWeight: 700, color: '#fff', fontFamily: "'Noto Serif SC', 'Georgia', serif" }}>Builder Brain</span>
+            <span style={{ fontSize: 11, color: '#888', fontFamily: "'Noto Serif SC', 'Georgia', serif" }}>创意副脑</span>
           </div>
-          
-          {/* 右侧结果展示面板 */}
-          <div className="space-y-6">
-            {plan && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            {user ? (
               <>
-                {/* AI 总结卡片 */}
-                <div className="card bg-gradient-to-br from-indigo-500/5 to-purple-600/5 border border-indigo-500/10">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold mb-3">AI Summary</h3>
-                      <p className="text-slate-700 mb-4">
-                        Your personalized study plan is ready. Based on your goal, current level, and time available, here is your optimized daily learning path.
-                      </p>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-slate-500">Recommended intensity</p>
-                          <p className="font-medium">{plan.summary.intensity}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-slate-500">Estimated success rate</p>
-                          <p className="font-medium">{plan.summary.successRate}%</p>
-                        </div>
-                        <div className="col-span-2">
-                          <p className="text-sm text-slate-500">Best study time</p>
-                          <p className="font-medium">{plan.summary.bestTime}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* 每日计划卡片 */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4">Daily Plan</h3>
-                  <div className="space-y-4">
-                    {plan.dailyPlans.map((dayPlan) => (
-                      <div 
-                        key={dayPlan.day} 
-                        className="card border border-slate-100 hover:border-primary/30"
-                      >
-                        <div 
-                          className="flex items-center justify-between cursor-pointer"
-                          onClick={() => toggleDay(dayPlan.day)}
-                        >
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold mr-3">
-                              {dayPlan.day}
-                            </div>
-                            <div>
-                              <h4 className="font-bold">Day {dayPlan.day}</h4>
-                              <p className="text-slate-600">{dayPlan.theme}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <span className="badge bg-indigo-100 text-indigo-700">
-                              {dayPlan.focus}
-                            </span>
-                            <svg 
-                              xmlns="http://www.w3.org/2000/svg" 
-                              className={`h-5 w-5 text-slate-500 transition-transform ${expandedDays[dayPlan.day] ? 'transform rotate-180' : ''}`} 
-                              fill="none" 
-                              viewBox="0 0 24 24" 
-                              stroke="currentColor"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </div>
-                        </div>
-                        
-                        {expandedDays[dayPlan.day] && (
-                          <div className="mt-4 pt-4 border-t border-slate-100">
-                            <div className="mb-3">
-                              <p className="text-sm text-slate-500">Estimated duration</p>
-                              <p className="font-medium">{dayPlan.duration}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-slate-700 mb-2">Tasks:</p>
-                              <ul className="space-y-2">
-                                {dayPlan.tasks.map((task, index) => (
-                                  <li key={index} className="flex items-start">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    <span className="text-slate-700">{task}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* 进度模块 */}
-                <div className="card">
-                  <h3 className="text-xl font-bold mb-4">Progress</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <p className="text-sm font-medium text-slate-700">Plan completion rate</p>
-                        <p className="text-sm font-medium text-indigo-500">{plan.progress.completionRate}%</p>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-2.5">
-                        <div 
-                          className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" 
-                          style={{ width: `${plan.progress.completionRate}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Difficulty level</p>
-                      <p className="font-medium">{plan.progress.difficultyLevel}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Weekly consistency suggestion</p>
-                      <p className="font-medium">{plan.progress.consistency}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* AI 提示模块 */}
-                <div className="card bg-gradient-to-br from-slate-50 to-slate-100">
-                  <h3 className="text-xl font-bold mb-4">AI Tips</h3>
-                  <ul className="space-y-3">
-                    {plan.tips.map((tip, index) => (
-                      <li key={index} className="flex items-start">
-                        <div className="w-6 h-6 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold mr-3 flex-shrink-0">
-                          {index + 1}
-                        </div>
-                        <span className="text-slate-700">{tip}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <NavButton onClick={() => setView('home')} active={view === 'home' || view === 'results'}>发现</NavButton>
+                <NavButton onClick={() => setView('profile')} active={view === 'profile'}>收藏</NavButton>
+                <NavButton onClick={() => setView('history')} active={view === 'history'}>历史</NavButton>
+                <NavButton onClick={() => { supabase.auth.signOut(); setFavorites([]); setSearches([]); setView('home'); }}>退出</NavButton>
               </>
+            ) : (
+              <button
+                onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
+                style={{
+                  fontSize: 13, fontWeight: 600, color: '#fff', background: 'none',
+                  border: '1px solid #555', borderRadius: 20, padding: '6px 16px', cursor: 'pointer',
+                }}
+              >
+                Google 登录
+              </button>
             )}
           </div>
         </div>
-      </main>
-      
-      {/* 页脚 */}
-      <footer className="py-6 px-6 md:px-12 bg-white/50 backdrop-blur-sm border-t border-slate-200">
-        <div className="max-w-7xl mx-auto text-center text-slate-600 text-sm">
-          <p>AI Daily Study Planner - Your personalized learning companion</p>
+      </nav>
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* 首页 */}
+      {/* ═══════════════════════════════════════════ */}
+      {view === 'home' && (
+        <div style={{ ...containerStyle, paddingTop: 56, paddingBottom: 80 }}>
+          {/* Hero */}
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <h1 style={{
+              fontSize: 38, fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.5px',
+              lineHeight: 1.2, fontFamily: "'Noto Serif SC', 'Georgia', serif", color: '#1a1a1a',
+            }}>
+              从趋势中发现<br />值得开发的产品 idea
+            </h1>
+            <p style={{ color: '#888', fontSize: 16, margin: 0, lineHeight: 1.6 }}>
+              输入你感兴趣的方向，AI 帮你拆解成可落地的产品机会
+            </p>
+          </div>
+
+          {/* 搜索区 */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+              <input
+                type='text'
+                placeholder='例如：AI + 小红书 + 电商'
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+                style={{
+                  flex: 1, padding: '14px 18px', fontSize: 15,
+                  border: '1px solid #e0dcd6', borderRadius: 10, outline: 'none',
+                  background: '#fff', color: '#1a1a1a',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#534AB7'}
+                onBlur={(e) => e.target.style.borderColor = '#e0dcd6'}
+              />
+              <button
+                onClick={() => handleGenerate()}
+                disabled={loading || !keywords.trim()}
+                style={{
+                  padding: '14px 28px', fontSize: 15, fontWeight: 600,
+                  background: loading ? '#ccc' : '#1a1a1a', color: '#fff',
+                  border: 'none', borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer',
+                  transition: 'background 0.2s',
+                }}
+              >
+                {loading ? '生成中...' : '生成创意'}
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: '#bbb', margin: 0, textAlign: 'center' }}>
+              支持多个关键词组合，用 + 分隔效果更好
+            </p>
+          </div>
+
+          {/* 快速方向 */}
+          <div style={{ marginBottom: 40 }}>
+            <p style={sectionTitleStyle}>快速方向</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {QUICK_DIRECTIONS.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => handleGenerate(d)}
+                  style={{
+                    fontSize: 13, padding: '7px 16px', borderRadius: 20,
+                    background: '#fff', color: '#555', border: '1px solid #e0dcd6',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => { e.target.style.background = '#1a1a1a'; e.target.style.color = '#fff'; e.target.style.borderColor = '#1a1a1a'; }}
+                  onMouseLeave={(e) => { e.target.style.background = '#fff'; e.target.style.color = '#555'; e.target.style.borderColor = '#e0dcd6'; }}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 今日推荐 */}
+          <div style={{ marginBottom: 40 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <p style={sectionTitleStyle}>今日推荐</p>
+              <span style={{ fontSize: 11, color: '#ccc' }}>今日已生成 {generatedCount} 个创意</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              {FEATURED.map((f) => (
+                <div key={f.label} style={{ background: f.color, borderRadius: 12, padding: 16, borderLeft: `3px solid ${f.border}` }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: f.text, margin: '0 0 12px' }}>{f.label}</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {f.items.map((item) => (
+                      <button
+                        key={item}
+                        onClick={() => handleGenerate(item)}
+                        style={{
+                          background: '#fff', border: 'none', borderRadius: 6,
+                          padding: '6px 10px', fontSize: 12, color: '#333',
+                          cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s',
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                        onMouseLeave={(e) => e.target.style.background = '#fff'}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 热门趋势 */}
+          <div style={{ marginBottom: 40 }}>
+            <p style={sectionTitleStyle}>热门趋势</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {TRENDS.map((t) => (
+                <div key={t.category} style={{ border: '1px solid #e8e4de', borderRadius: 12, padding: 16, background: '#fff' }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#333', margin: '0 0 10px' }}>{t.category}</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {t.items.map((item) => (
+                      <button
+                        key={item}
+                        onClick={() => handleGenerate(item)}
+                        style={{
+                          background: '#f5f0e8', border: 'none', borderRadius: 16,
+                          padding: '5px 12px', fontSize: 12, color: '#555', cursor: 'pointer',
+                          transition: 'background 0.2s',
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = '#ede7db'}
+                        onMouseLeave={(e) => e.target.style.background = '#f5f0e8'}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 随机生成 */}
+          <div style={{ textAlign: 'center', paddingTop: 8 }}>
+            <button
+              onClick={handleRandom}
+              style={{
+                fontSize: 15, fontWeight: 600, padding: '14px 36px', borderRadius: 28,
+                background: '#f0ece6', color: '#534AB7', border: '1px solid #e0dcd6',
+                cursor: 'pointer', transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.target.style.background = '#534AB7'; e.target.style.color = '#fff'; }}
+              onMouseLeave={(e) => { e.target.style.background = '#f0ece6'; e.target.style.color = '#534AB7'; }}
+            >
+              ✨ 随机生成创业机会
+            </button>
+            <p style={{ fontSize: 12, color: '#ccc', marginTop: 10 }}>不知道从哪里开始？让我们帮你随机挑一个方向</p>
+          </div>
         </div>
+      )}
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* 搜索结果页 */}
+      {/* ═══════════════════════════════════════════ */}
+      {view === 'results' && (
+        <div style={{ ...containerStyle, paddingTop: 40, paddingBottom: 80 }}>
+          {/* 返回按钮 */}
+          <button
+            onClick={() => setView('home')}
+            style={{
+              fontSize: 13, color: '#888', background: 'none', border: 'none',
+              cursor: 'pointer', padding: 0, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            ← 返回首页
+          </button>
+
+          {/* 关键词 + AI 总结 */}
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <span style={{ fontSize: 12, color: '#999', fontWeight: 600 }}>关键词：</span>
+              <span style={{
+                fontSize: 15, fontWeight: 700, color: '#1a1a1a',
+                fontFamily: "'Noto Serif SC', 'Georgia', serif",
+              }}>
+                「{keywords}」
+              </span>
+            </div>
+            {summary && (
+              <div style={{
+                background: '#fff', borderRadius: 10, padding: '14px 20px',
+                borderLeft: '3px solid #534AB7', lineHeight: 1.7, color: '#555', fontSize: 14,
+              }}>
+                {summary}
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div style={{ color: '#9b2226', background: '#fef2f2', padding: '12px 16px', borderRadius: 8, marginBottom: 24, fontSize: 14 }}>
+              {error}
+            </div>
+          )}
+
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <p style={{ color: '#999', fontSize: 15 }}>正在生成创意，请稍候...</p>
+            </div>
+          )}
+
+          {/* 对比视图 */}
+          {!loading && ideas.length > 0 && <ComparisonView ideas={ideas} />}
+
+          {/* 分享按钮 */}
+          {!loading && ideas.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20, maxWidth: 680, margin: '0 auto 20px' }}>
+              <button
+                onClick={handleShare}
+                style={{
+                  fontSize: 13, fontWeight: 600, color: '#534AB7', background: 'none',
+                  border: '1px solid #e0dcd6', borderRadius: 20, padding: '6px 16px', cursor: 'pointer',
+                }}
+              >
+                分享这些创意
+              </button>
+            </div>
+          )}
+
+          {/* Idea 卡片列表 */}
+          {!loading && ideas.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {ideas.map((idea, i) => (
+                <IdeaCard
+                  key={i}
+                  idea={idea}
+                  user={user}
+                  favorites={favorites}
+                  onFavChange={toggleFavorite}
+                  onKeywordClick={handleKeywordClick}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* 延伸探索 */}
+          {!loading && ideas.length > 0 && (
+            <div style={{ textAlign: 'center', marginTop: 40, paddingTop: 32, borderTop: '1px solid #e8e4de' }}>
+              <p style={{ fontSize: 13, color: '#999', marginBottom: 12 }}>换个方向继续探索</p>
+              <button
+                onClick={handleRandom}
+                style={{
+                  fontSize: 14, fontWeight: 600, padding: '10px 24px', borderRadius: 20,
+                  background: '#f0ece6', color: '#534AB7', border: '1px solid #e0dcd6',
+                  cursor: 'pointer',
+                }}
+              >
+                ✨ 随机生成
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* 个人收藏页 */}
+      {/* ═══════════════════════════════════════════ */}
+      {view === 'profile' && (
+        <div style={{ ...containerStyle, paddingTop: 40, paddingBottom: 80 }}>
+          <h2 style={{
+            fontSize: 24, fontWeight: 700, margin: '0 0 24px',
+            fontFamily: "'Noto Serif SC', 'Georgia', serif", color: '#1a1a1a',
+          }}>
+            我的收藏
+          </h2>
+
+          {/* 筛选 Tab */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
+            {['全部', '工具型', '内容型', '平台型', '服务型'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setFilterType(tab)}
+                style={{
+                  fontSize: 13, fontWeight: filterType === tab ? 700 : 500,
+                  padding: '6px 16px', borderRadius: 20,
+                  background: filterType === tab ? '#1a1a1a' : '#fff',
+                  color: filterType === tab ? '#fff' : '#666',
+                  border: `1px solid ${filterType === tab ? '#1a1a1a' : '#e0dcd6'}`,
+                  cursor: 'pointer', transition: 'all 0.2s',
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {filteredFavorites.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '80px 0' }}>
+              <p style={{ color: '#bbb', fontSize: 15 }}>还没有收藏，去生成一些创意吧</p>
+              <button
+                onClick={() => setView('home')}
+                style={{
+                  marginTop: 16, fontSize: 14, fontWeight: 600, color: '#534AB7',
+                  background: 'none', border: '1px solid #e0dcd6', borderRadius: 20,
+                  padding: '8px 20px', cursor: 'pointer',
+                }}
+              >
+                去发现创意 →
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {filteredFavorites.map((idea, i) => (
+                <IdeaCard
+                  key={i}
+                  idea={{
+                    ...idea,
+                    whyItMatters: idea.why_it_matters || idea.whyItMatters,
+                    targetUser: idea.target_user || idea.targetUser,
+                    painPoint: idea.pain_point || idea.painPoint,
+                    mvpPlan: idea.mvp_plan || idea.mvpPlan,
+                    builderTake: idea.builder_take || idea.builderTake,
+                    riskWarning: idea.risk_warning || idea.riskWarning,
+                    competitorLandscape: idea.competitor_landscape || idea.competitorLandscape,
+                    ideaType: idea.idea_type || idea.ideaType,
+                    revenueModel: idea.revenue_model || idea.revenueModel,
+                    devTime: idea.dev_time || idea.devTime,
+                    relatedKeywords: idea.related_keywords || idea.relatedKeywords,
+                  }}
+                  user={user}
+                  favorites={favorites}
+                  onFavChange={toggleFavorite}
+                  onKeywordClick={handleKeywordClick}
+                  compact
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* 搜索历史页 */}
+      {/* ═══════════════════════════════════════════ */}
+      {view === 'history' && (
+        <div style={{ ...containerStyle, paddingTop: 40, paddingBottom: 80 }}>
+          <h2 style={{
+            fontSize: 24, fontWeight: 700, margin: '0 0 24px',
+            fontFamily: "'Noto Serif SC', 'Georgia', serif", color: '#1a1a1a',
+          }}>
+            搜索历史
+          </h2>
+
+          {searches.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '80px 0' }}>
+              <p style={{ color: '#bbb', fontSize: 15 }}>还没有搜索记录</p>
+              <button
+                onClick={() => setView('home')}
+                style={{
+                  marginTop: 16, fontSize: 14, fontWeight: 600, color: '#534AB7',
+                  background: 'none', border: '1px solid #e0dcd6', borderRadius: 20,
+                  padding: '8px 20px', cursor: 'pointer',
+                }}
+              >
+                去发现创意 →
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {groupSearchesByDate(searches).map(([group, items]) => (
+                <div key={group}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: '#999', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>
+                    {group}
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                    {items.map((s) => (
+                      <div
+                        key={s.id}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '14px 0', borderBottom: '1px solid #f0ece6',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleGenerate(s.keywords)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <span style={{ color: '#ccc', fontSize: 14 }}>·</span>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>{s.keywords}</span>
+                          <span style={{ fontSize: 12, color: '#bbb' }}>
+                            {formatTime(s.created_at)} · 生成了 5 个创意
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleGenerate(s.keywords); }}
+                          style={{
+                            fontSize: 12, fontWeight: 600, color: '#534AB7',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          重新生成 →
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── 页脚 ─────────────────────────────────── */}
+      <footer style={{
+        textAlign: 'center', padding: '24px 0', borderTop: '1px solid #e8e4de',
+        color: '#ccc', fontSize: 12,
+      }}>
+        Builder Brain · 为 AI Builder 和独立开发者设计的产品灵感工具
       </footer>
     </div>
   );
-};
+}
 
-export default AIDailyStudyPlanner;
+// ─── 导航按钮组件 ────────────────────────────────────
+function NavButton({ children, onClick, active }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        fontSize: 13, fontWeight: active ? 700 : 500,
+        color: active ? '#fff' : '#999',
+        background: 'none', border: 'none',
+        padding: '6px 12px', cursor: 'pointer',
+        borderBottom: active ? '2px solid #fff' : '2px solid transparent',
+        transition: 'all 0.2s',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
