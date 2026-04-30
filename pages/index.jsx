@@ -6,16 +6,48 @@ import IdeaCard from '../components/IdeaCard';
 const QUICK_DIRECTIONS = ['AI副业', '小红书', '电商', '设计工具', '自动化', '效率工具'];
 
 const TRENDS = [
-  { category: '内容创作', items: ['小红书封面', 'AI短视频', '自动剪辑', '爆款标题'] },
-  { category: '副业赚钱', items: ['AI变现工具', '自动接单', '数字产品', '订阅制工具'] },
-  { category: '电商', items: ['商品图生成', '评论分析', '选品工具', '广告素材生成'] },
-  { category: '效率工具', items: ['自动日报', '邮件总结', '会议纪要', '任务拆解'] },
+  { category: '内容创作', items: [
+    { title: 'AI 小红书封面生成器', desc: '一键生成爆款笔记封面，自动匹配热门排版', tags: ['工具型', '简单', '订阅制'], kw: 'AI小红书封面' },
+    { title: 'AI 短视频脚本助手', desc: '输入主题自动生成抖音/快手短视频分镜脚本', tags: ['内容型', '中等', '免费增值'], kw: 'AI短视频脚本' },
+    { title: '自动视频剪辑工具', desc: '上传素材自动识别高光时刻，一键出片', tags: ['工具型', '中等', '订阅制'], kw: '自动视频剪辑' },
+    { title: '爆款标题生成器', desc: '基于千万篇爆款内容训练，生成高点击率标题', tags: ['工具型', '简单', '一次性付费'], kw: '爆款标题生成' },
+  ]},
+  { category: '副业赚钱', items: [
+    { title: 'AI 数字产品工坊', desc: '自动生成电子书、课程大纲、模板等可售卖数字产品', tags: ['工具型', '中等', '订阅制'], kw: 'AI数字产品' },
+    { title: '自动接单助手', desc: '监控多个自由职业平台，自动匹配和投标适合的项目', tags: ['工具型', '中等', '佣金抽成'], kw: '自动接单平台' },
+    { title: '知识付费课程打包器', desc: '将你的专业知识自动拆解为可售卖的系列课程', tags: ['内容型', '简单', '一次性付费'], kw: '知识付费课程' },
+    { title: '订阅制工具聚合平台', desc: '帮用户发现和管理各种 SaaS 订阅，赚取推荐佣金', tags: ['平台型', '困难', '佣金抽成'], kw: '订阅制工具聚合' },
+  ]},
+  { category: '电商', items: [
+    { title: 'AI 商品图生成', desc: '无需实拍，AI 生成专业级电商产品展示图', tags: ['工具型', '简单', '订阅制'], kw: 'AI商品图生成' },
+    { title: '评论情感分析工具', desc: '自动分析竞品评论，提取用户痛点和需求', tags: ['工具型', '中等', '订阅制'], kw: '电商评论分析' },
+    { title: 'AI 选品助手', desc: '基于销量趋势和社交媒体热度，智能推荐蓝海产品', tags: ['工具型', '中等', '订阅制'], kw: 'AI选品工具' },
+    { title: '广告素材 A/B 工厂', desc: '批量生成广告文案和图片素材，自动测试最优方案', tags: ['工具型', '中等', '广告变现'], kw: '广告素材生成' },
+  ]},
+  { category: '效率工具', items: [
+    { title: 'AI 自动日报生成', desc: '连接你的工具链，自动汇总每日工作进展生成日报', tags: ['工具型', '简单', '订阅制'], kw: 'AI自动日报' },
+    { title: '邮件智能总结', desc: '自动分类、摘要、提取待办事项，告别邮件焦虑', tags: ['工具型', '简单', '免费增值'], kw: '邮件智能总结' },
+    { title: '会议纪要自动生成', desc: '语音转文字 + AI 提取决议和待办，会后秒出纪要', tags: ['工具型', '中等', '订阅制'], kw: '会议纪要自动生成' },
+    { title: 'AI 任务拆解器', desc: '输入一个大目标，自动拆解为可执行的子任务和时间线', tags: ['工具型', '简单', '免费增值'], kw: 'AI任务拆解' },
+  ]},
 ];
 
 const FEATURED = [
-  { label: '本周值得关注', color: '#f0ece6', border: '#534AB7', text: '#534AB7', items: ['AI Agent工具', '知识付费', '出海工具'] },
-  { label: '适合新手', color: '#e6f4ea', border: '#2d6a4f', text: '#2d6a4f', items: ['小红书运营工具', '简历优化', '自动日报'] },
-  { label: '更容易变现', color: '#fff8e1', border: '#b45309', text: '#b45309', items: ['订阅制工具', 'AI变现工具', '数字产品'] },
+  { label: '本周值得关注', color: '#f0ece6', border: '#534AB7', text: '#534AB7', items: [
+    { title: 'AI Agent 搭建平台', desc: '零代码搭建自定义 AI Agent，让 AI 自动完成重复工作', tags: ['工具型', '简单'], kw: 'AI Agent搭建平台' },
+    { title: '知识付费变现工具', desc: '从内容创作到售卖一站式解决，支持课程/专栏/社群', tags: ['平台型', '中等'], kw: '知识付费变现工具' },
+    { title: '出海工具箱', desc: '一键翻译、多平台发布、海外社媒管理，助力产品出海', tags: ['工具型', '中等'], kw: '出海工具箱' },
+  ]},
+  { label: '适合新手', color: '#e6f4ea', border: '#2d6a4f', text: '#2d6a4f', items: [
+    { title: '小红书运营助手', desc: '自动生成笔记文案、排版建议、发布时间优化', tags: ['工具型', '简单'], kw: '小红书运营助手' },
+    { title: 'AI 简历优化器', desc: '根据目标岗位自动优化简历，提升面试通过率', tags: ['工具型', '简单'], kw: 'AI简历优化' },
+    { title: '自动日报生成器', desc: '一句话描述今天做了什么，自动生成专业日报', tags: ['工具型', '简单'], kw: '自动日报生成器' },
+  ]},
+  { label: '更容易变现', color: '#fff8e1', border: '#b45309', text: '#b45309', items: [
+    { title: 'SaaS 订阅制模板', desc: '提供现成的 SaaS 产品模板，改改就能上线收费', tags: ['工具型', '中等'], kw: 'SaaS订阅制模板' },
+    { title: 'AI 变现工具合集', desc: '整合多种 AI 能力的变现工具包，开箱即用', tags: ['工具型', '简单'], kw: 'AI变现工具合集' },
+    { title: '数字产品自动生成', desc: 'AI 批量生成电子书、PPT 模板、Notion 模板等', tags: ['内容型', '简单'], kw: '数字产品自动生成' },
+  ]},
 ];
 
 const RANDOM_KEYWORDS = ['AI + 副业 + 自动化', '小红书 + 电商 + 选品', '设计工具 + SaaS', '效率工具 + 订阅', 'AI + 内容创作', '电商 + AI + 广告'];
@@ -310,20 +342,26 @@ export default function Home() {
               {FEATURED.map((f) => (
                 <div key={f.label} style={{ background: f.color, borderRadius: 12, padding: 16, borderLeft: `3px solid ${f.border}` }}>
                   <p style={{ fontSize: 12, fontWeight: 700, color: f.text, margin: '0 0 12px' }}>{f.label}</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {f.items.map((item) => (
                       <button
-                        key={item}
-                        onClick={() => handleGenerate(item)}
+                        key={item.title}
+                        onClick={() => handleGenerate(item.kw)}
                         style={{
-                          background: '#fff', border: 'none', borderRadius: 6,
-                          padding: '6px 10px', fontSize: 12, color: '#333',
-                          cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s',
+                          background: '#fff', border: 'none', borderRadius: 8,
+                          padding: '10px 12px', cursor: 'pointer', textAlign: 'left',
+                          transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                         }}
-                        onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
-                        onMouseLeave={(e) => e.target.style.background = '#fff'}
+                        onMouseEnter={(e) => e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'}
+                        onMouseLeave={(e) => e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'}
                       >
-                        {item}
+                        <p style={{ fontSize: 12, fontWeight: 700, color: '#1a1a1a', margin: '0 0 4px', lineHeight: 1.3 }}>{item.title}</p>
+                        <p style={{ fontSize: 11, color: '#888', margin: '0 0 6px', lineHeight: 1.5 }}>{item.desc}</p>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {item.tags.map((tag) => (
+                            <span key={tag} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#f5f0e8', color: '#999' }}>{tag}</span>
+                          ))}
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -338,21 +376,30 @@ export default function Home() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {TRENDS.map((t) => (
                 <div key={t.category} style={{ border: '1px solid #e8e4de', borderRadius: 12, padding: 16, background: '#fff' }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#333', margin: '0 0 10px' }}>{t.category}</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#333', margin: '0 0 12px' }}>{t.category}</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {t.items.map((item) => (
                       <button
-                        key={item}
-                        onClick={() => handleGenerate(item)}
+                        key={item.title}
+                        onClick={() => handleGenerate(item.kw)}
                         style={{
-                          background: '#f5f0e8', border: 'none', borderRadius: 16,
-                          padding: '5px 12px', fontSize: 12, color: '#555', cursor: 'pointer',
-                          transition: 'background 0.2s',
+                          background: '#faf8f3', border: '1px solid #f0ece6', borderRadius: 10,
+                          padding: '10px 14px', cursor: 'pointer', textAlign: 'left',
+                          transition: 'all 0.2s',
                         }}
-                        onMouseEnter={(e) => e.target.style.background = '#ede7db'}
-                        onMouseLeave={(e) => e.target.style.background = '#f5f0e8'}
+                        onMouseEnter={(e) => { e.target.style.background = '#fff'; e.target.style.borderColor = '#d0ccc6'; e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
+                        onMouseLeave={(e) => { e.target.style.background = '#faf8f3'; e.target.style.borderColor = '#f0ece6'; e.target.style.boxShadow = 'none'; }}
                       >
-                        {item}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', margin: 0, lineHeight: 1.3 }}>{item.title}</p>
+                          <span style={{ fontSize: 10, color: '#bbb', whiteSpace: 'nowrap', marginLeft: 8 }}>→</span>
+                        </div>
+                        <p style={{ fontSize: 11, color: '#999', margin: '0 0 6px', lineHeight: 1.5 }}>{item.desc}</p>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {item.tags.map((tag) => (
+                            <span key={tag} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#f0ece6', color: '#999' }}>{tag}</span>
+                          ))}
+                        </div>
                       </button>
                     ))}
                   </div>
