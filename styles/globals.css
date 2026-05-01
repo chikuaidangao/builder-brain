@@ -1,15 +1,26 @@
 /* Builder Brain 全局样式 */
-/* 画廊风设计系统：米黄背景 + 衬线标题 + 无衬线正文 */
+/* AI SaaS 高级感设计系统（Calm Tech） */
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #FAF8F3;
-  color: #1a1a1a;
-  line-height: 1.8;
+  font-family: 'Urbanist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #F7F8FC;
+  color: #1A1D2E;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: #534AB7;
+  background: #6366F1;
   color: #fff;
+}
+
+/* 链接默认样式 */
+a {
+  color: #6366F1;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
 }
