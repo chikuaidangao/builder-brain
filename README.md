@@ -75,16 +75,6 @@ builder-brain/
 └── package.json
 ```
 
-## 设计系统
-
-采用 AI SaaS 高级感设计系统 (Calm Tech)：
-
-- **配色**: 低饱和雾化底色 + 点状高亮
-- **阴影**: 3 级层级体系
-- **圆角**: 8/16/20/24px 四级
-- **动效**: 200/300ms ease-out
-- **字体**: Urbanist + Inter
-
 ## 在线访问
 
 https://workspace-six-delta-85.vercel.app

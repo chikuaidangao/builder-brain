@@ -5,15 +5,15 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      "https://api.siliconflow.cn/v1/chat/completions",
+      "https://api.deepseek.com/v1/chat/completions",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.SILICONFLOW_API_KEY}`,
+          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "Qwen/Qwen2.5-7B-Instruct",
+          model: "deepseek-chat",
           messages: [{
             role: "user",
             content: `你是一个产品创意专家，专注于帮助独立开发者和 AI Builder 发现有潜力的轻量产品机会。

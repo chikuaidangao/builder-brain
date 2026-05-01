@@ -92,7 +92,11 @@ export default function IdeaCard({ idea, user, favorites, onFavChange, onKeyword
 
   async function toggleFavorite(e) {
     if (e) e.stopPropagation();
-    if (!user) { alert('请先登录才能收藏'); return; }
+    if (!user) {
+      // 未登录时跳转登录
+      supabase.auth.signInWithOAuth({ provider: 'google' });
+      return;
+    }
     if (isFavorited) {
       const target = favorites.find((f) => f.title === idea.title);
       if (target) await supabase.from('favorites').delete().eq('id', target.id);
@@ -156,15 +160,14 @@ export default function IdeaCard({ idea, user, favorites, onFavChange, onKeyword
               {idea.revenueModel || idea.monetization}
             </span>
           </div>
-          {user && (
-            <button onClick={toggleFavorite} style={{
-              background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
-              transition: `transform ${T.dur} ${T.ease}`,
-            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-              {isFavorited ? '❤️' : '🤍'}
-            </button>
-          )}
+          <button onClick={toggleFavorite} style={{
+            background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
+            transition: `transform ${T.dur} ${T.ease}`,
+          }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+             title={user ? (isFavorited ? '取消收藏' : '收藏') : '登录后收藏'}>
+            {isFavorited ? '❤️' : '🤍'}
+          </button>
         </div>
         <p style={{ color: T.textSec, fontSize: 14, lineHeight: 1.6, margin: 0, fontFamily: T.font }}>
           {idea.whyItMatters || idea.description}
@@ -280,15 +283,14 @@ export default function IdeaCard({ idea, user, favorites, onFavChange, onKeyword
         )}
         {/* 收藏按钮 */}
         <div style={{ marginLeft: 'auto' }}>
-          {user && (
-            <button onClick={toggleFavorite} style={{
-              background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
-              transition: `transform ${T.dur} ${T.ease}`,
-            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-              {isFavorited ? '❤️' : '🤍'}
-            </button>
-          )}
+          <button onClick={toggleFavorite} style={{
+            background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
+            transition: `transform ${T.dur} ${T.ease}`,
+          }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+             title={user ? (isFavorited ? '取消收藏' : '收藏') : '登录后收藏'}>
+            {isFavorited ? '❤️' : '🤍'}
+          </button>
         </div>
       </div>
 
