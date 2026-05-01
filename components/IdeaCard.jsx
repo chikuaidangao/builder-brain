@@ -88,13 +88,24 @@ function SectionDivider({ label }) {
 
 export default function IdeaCard({ idea, user, favorites, onFavChange, onKeywordClick, compact = false }) {
   const [expanded, setExpanded] = useState(false);
+  const [liked, setLiked] = useState(false);
   const isFavorited = favorites.some((f) => f.title === idea.title);
 
-  async function toggleFavorite(e) {
-    if (e) e.stopPropagation();
+  // 点赞 — 本地状态，无需登录
+  function handleLike(e) {
+    e.stopPropagation();
+    setLiked(!liked);
+  }
+
+  // 收藏 — 需登录，Supabase 持久化
+  async function handleFavorite(e) {
+    e.stopPropagation();
     if (!user) {
-      // 未登录时跳转登录
-      supabase.auth.signInWithOAuth({ provider: 'google' });
+      // 未登录 → 跳转 Google 登录，登录后回到当前页
+      supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
+      });
       return;
     }
     if (isFavorited) {
@@ -126,6 +137,39 @@ export default function IdeaCard({ idea, user, favorites, onFavChange, onKeyword
   const diff = difficultyConfig[idea.difficulty] || difficultyConfig.medium;
   const typeStyle = ideaTypeConfig[idea.ideaType] || ideaTypeConfig['工具型'];
   const revStyle = revenueConfig[idea.revenueModel] || revenueConfig['订阅制'];
+
+  // 点赞 / 收藏按钮组（复用组件）
+  function ActionButtons() {
+    const btnBase = {
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      background: 'none', border: 'none', cursor: 'pointer',
+      fontSize: 13, fontFamily: T.font, fontWeight: 500,
+      padding: '4px 8px', borderRadius: T.rSm,
+      transition: `all ${T.dur} ${T.ease}`,
+    };
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {/* 点赞 */}
+        <button onClick={handleLike} style={{
+          ...btnBase,
+          color: liked ? T.accent : T.textTert,
+        }} onMouseEnter={(e) => { e.currentTarget.style.background = T.accentSoft; }}
+           onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+           title="点赞">
+          {liked ? '👍' : '👍'}
+        </button>
+        {/* 收藏 */}
+        <button onClick={handleFavorite} style={{
+          ...btnBase,
+          color: isFavorited ? T.text : T.textTert,
+        }} onMouseEnter={(e) => { e.currentTarget.style.background = T.accentSoft; }}
+           onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+           title={user ? (isFavorited ? '取消收藏' : '收藏') : '登录后收藏'}>
+          {isFavorited ? '★' : '☆'}
+        </button>
+      </div>
+    );
+  }
 
   // 紧凑模式（收藏页用）
   if (compact) {
@@ -160,14 +204,7 @@ export default function IdeaCard({ idea, user, favorites, onFavChange, onKeyword
               {idea.revenueModel || idea.monetization}
             </span>
           </div>
-          <button onClick={toggleFavorite} style={{
-            background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
-            transition: `transform ${T.dur} ${T.ease}`,
-          }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-             title={user ? (isFavorited ? '取消收藏' : '收藏') : '登录后收藏'}>
-            {isFavorited ? '❤️' : '🤍'}
-          </button>
+          <ActionButtons />
         </div>
         <p style={{ color: T.textSec, fontSize: 14, lineHeight: 1.6, margin: 0, fontFamily: T.font }}>
           {idea.whyItMatters || idea.description}
@@ -281,16 +318,8 @@ export default function IdeaCard({ idea, user, favorites, onFavChange, onKeyword
             {idea.ideaType}
           </span>
         )}
-        {/* 收藏按钮 */}
         <div style={{ marginLeft: 'auto' }}>
-          <button onClick={toggleFavorite} style={{
-            background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
-            transition: `transform ${T.dur} ${T.ease}`,
-          }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-             title={user ? (isFavorited ? '取消收藏' : '收藏') : '登录后收藏'}>
-            {isFavorited ? '❤️' : '🤍'}
-          </button>
+          <ActionButtons />
         </div>
       </div>
 
